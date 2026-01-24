@@ -3,6 +3,7 @@ import feedparser
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+from src.preprocessing import clean_text
 
 MANCHESTER_UNITED_KEYWORDS = [
     "man united",
@@ -12,16 +13,14 @@ MANCHESTER_UNITED_KEYWORDS = [
     "old trafford"
 ]
 
-def fetch_reddit_json(subreddits, limit=50):
+def fetch_reddit_json(subreddits, mu_only, limit=50):
     url_template = "https://www.reddit.com/r/{}/new.json"
-    headers = {"User-Agent": "bristol-city-sentiment-uni-project"}
-    
+    headers = {"User-Agent": "manchester-united-sentiment-uni-project"}
+
     Path("data/reddit").mkdir(parents=True, exist_ok=True)
-    total_rows = 0
+    all_posts = []
 
     for subreddit in subreddits:
-        rows = []
-        
         url = url_template.format(subreddit)
         params = {"limit": limit}
 
@@ -29,45 +28,103 @@ def fetch_reddit_json(subreddits, limit=50):
         r.raise_for_status()
 
         posts = r.json()["data"]["children"]
-    
+
         for post in posts:
             p = post["data"]
-            title = p['title'].strip()
-            title_lower = title.lower()
-            
-            if subreddit.lower() in ["manchesterunited", "reddevils"]:
+
+            raw_title = p.get("title", "").strip()
+            if not raw_title:
+                continue
+
+            text_lower = raw_title.lower()
+
+            if mu_only:
                 include = True
             else:
-                include = any(keyword in title_lower for keyword in MANCHESTER_UNITED_KEYWORDS)
-            
-            if include and title:
-                rows.append({
-                    "date": datetime.utcfromtimestamp(p["created_utc"]).strftime("%Y-%m-%d"),
-                    "text": title
-                })
+                include = any(keyword in text_lower for keyword in MANCHESTER_UNITED_KEYWORDS)
 
-        df = pd.DataFrame(rows)
-        df.to_csv(
-            f"data/reddit/{subreddit.lower()}_posts.csv",
-            index=False,
-            encoding="utf-8"
-        )
+            if not include:
+                continue
+
+            cleaned = clean_text(raw_title)
+            if not cleaned:
+                continue
+
+            all_posts.append({
+                "date": datetime.utcfromtimestamp(p["created_utc"]).strftime("%Y-%m-%d"),
+                "text": cleaned,
+                "source": f"r/{subreddit}"
+            })
+
+    df = pd.DataFrame(all_posts)
+
+    output_file = (
+        "data/reddit/mu_posts.csv"
+        if mu_only
+        else "data/reddit/general_posts.csv"
+    )
+
+    df.to_csv(output_file, index=False, encoding="utf-8")
+
+    return len(df)
+
+
+def fetch_news_rss(feeds, mu_only, limit_per_feed=50):
+    Path("data/news").mkdir(parents=True, exist_ok=True)
+    all_articles = []
+
+    for feed_url in feeds:
         
-        total_rows += len(df)
+        feed = feedparser.parse(feed_url)
+        source_name = normalise_source(feed)
+        
+        for entry in feed.entries[:limit_per_feed]:
+            
+            text = f"{entry.title} {entry.summary}".lower()
+            
+            if any(keyword in text for keyword in MANCHESTER_UNITED_KEYWORDS):
+                
+                cleaned = clean_text(entry.title)
+                
+                if cleaned:
+                    all_articles.append({
+                        "date": datetime(*entry.published_parsed[:6]).strftime("%Y-%m-%d"),
+                        "text": cleaned,
+                        "source": source_name
+                    })
 
-    return total_rows
+    df = pd.DataFrame(all_articles)
+    
+    output_file = ""
+        
+    if mu_only:
+        
+        output_file = "data/news/mu_articles.csv"
+    
+    else: 
+        
+        output_file = "data/news/general_articles.csv"
+    
+    
+    df.to_csv(output_file, index=False, encoding="utf-8")
+    
+    sources = sorted(df["source"].unique())
+    return len(df), sources
 
 
-def fetch_news_rss(feed_url="https://www.bbc.co.uk/sport/football/rss.xml", limit=10):
-    feed = feedparser.parse(feed_url)
-    data = []
+def normalise_source(feed):
+    
+    title = feed.feed.get("title", "unknown").lower()
 
-    for entry in feed.entries[:limit]:
-        data.append({
-            "date": datetime(*entry.published_parsed[:6]).strftime("%Y-%m-%d"),
-            "text": entry.title + " " + entry.summary
-        })
+    if "bbc" in title:
+        return "BBC Sport"
+    if "guardian" in title:
+        return "The Guardian"
+    if "sky" in title:
+        return "Sky News"
+    if "manutd" in title or "manchester united" in title:
+        return "Man United Official"
+    if "espn" in title or "ESPN" in title:
+        return "ESPN"
 
-    df = pd.DataFrame(data)
-    df.to_csv("data/news/articles.csv", index=False)
-    return df
+    return title.title()
