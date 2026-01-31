@@ -5,56 +5,128 @@ import pandas as pd
 from datetime import datetime
 from src.preprocessing import clean_text
 
+
+
 MANCHESTER_UNITED_KEYWORDS = [
     "man united",
     "mufc",
     "the red devils",
+    "red devils",
     "manchester united",
-    "old trafford"
+    "manchester utd",
+    "man u",
+    "old trafford",
+    "man utd",
+    "bruno fernandes",
+    "lisandro martinez",
+    "harry maguire",
+    "luke shaw",
+    "matheus cunha",
+    "stretford end",
+    "casemiro",
+    "sesko",
+    "mbeumo",
+    "amad",
+    "mason mount",
+    "carrick",
+    "ratcliffe",
+    "jason wilcox",
+    "omar berrada",
+    "class of 92",
+    "alex ferguson",
+    "glazers",
 ]
 
-def fetch_reddit_json(subreddits, mu_only, limit=50):
-    url_template = "https://www.reddit.com/r/{}/new.json"
-    headers = {"User-Agent": "manchester-united-sentiment-uni-project"}
+def fetch_reddit_json(subreddits, mu_only, limit=100):
+    url_template = "https://www.reddit.com/r/{}/hot.json"
+    headers = {"User-Agent": "windows:manchester-united-sentiment-uni-project:v1.0"}
 
     Path("data/reddit").mkdir(parents=True, exist_ok=True)
     all_posts = []
+    
+    source_counts = {}
 
     for subreddit in subreddits:
-        url = url_template.format(subreddit)
-        params = {"limit": limit}
+        subreddit_posts = []
+        title_count = 0
+        after = None
+        
+        max_pages = 20
+        pages = 0
+        
+        while title_count < limit and pages < max_pages:
+            params = {
+                "limit": 100,
+                "after": after
+            }
+            
+            url = url_template.format(subreddit)
+            r = requests.get(url, headers=headers, params=params, timeout=10)
+            r.raise_for_status()
 
-        r = requests.get(url, headers=headers, params=params, timeout=10)
-        r.raise_for_status()
+            data = r.json()["data"]
+            posts = data["children"]
+            after = data["after"]
+        
+            print(subreddit, len(posts))
+            
+            if not posts:
+                break 
 
-        posts = r.json()["data"]["children"]
+            for post in posts:
+                p = post["data"]
+                raw_title = p.get("title", "").strip()
+                if not raw_title:
+                    continue
 
-        for post in posts:
-            p = post["data"]
+                text_lower = raw_title.lower()
 
-            raw_title = p.get("title", "").strip()
-            if not raw_title:
-                continue
+                if mu_only:
+                    include = True
+                else:
+                    include = any(keyword in text_lower for keyword in MANCHESTER_UNITED_KEYWORDS)
 
-            text_lower = raw_title.lower()
+                if not include:
+                    continue
 
-            if mu_only:
-                include = True
-            else:
-                include = any(keyword in text_lower for keyword in MANCHESTER_UNITED_KEYWORDS)
+                cleaned = clean_text(raw_title)
+                if not cleaned:
+                    continue
+                
+                post_id = p["id"]
 
-            if not include:
-                continue
+                subreddit_posts.append({
+                    "date": datetime.utcfromtimestamp(p["created_utc"]).strftime("%Y-%m-%d"),
+                    "text": cleaned,
+                    "source": f"r/{subreddit}",
+                })
+                
+                title_count += 1
+                
+                # comments = fetch_comments(post_id)
 
-            cleaned = clean_text(raw_title)
-            if not cleaned:
-                continue
+                # for c in comments:
+                    # subreddit_posts.append({
+                        # "date": datetime.utcfromtimestamp(p["created_utc"]).strftime("%Y-%m-%d"),
+                        # "text": c["text"],
+                        # "source": f"r/{subreddit}",
+                        # "level": "comment",
+                        # "depth": c["depth"],
+                        # "score": c["score"],
+                        # "thread_id": post_id
+                    # })
+                
+                if title_count >= limit:
+                    break
+                
+            pages += 1
+            
+            if after is None:
+                break  # reached end of subreddit history
 
-            all_posts.append({
-                "date": datetime.utcfromtimestamp(p["created_utc"]).strftime("%Y-%m-%d"),
-                "text": cleaned,
-                "source": f"r/{subreddit}"
-            })
+        all_posts.extend(subreddit_posts)
+        
+        source_counts[f"r/{subreddit}"] = len(subreddit_posts)
 
     df = pd.DataFrame(all_posts)
 
@@ -66,32 +138,94 @@ def fetch_reddit_json(subreddits, mu_only, limit=50):
 
     df.to_csv(output_file, index=False, encoding="utf-8")
 
-    return len(df)
+    return len(df), source_counts
 
+
+
+"""
+def fetch_comments(post_id, max_comments=5):
+    
+    url = f"https://www.reddit.com/comments/{post_id}.json?limit={max_comments}"
+    headers = {"User-Agent": "windows:manchester-united-sentiment-uni-project:v1.0"}
+
+    try:
+        r = requests.get(url, headers=headers, timeout=5)
+        r.raise_for_status()
+        
+    except requests.RequestException:
+        return []
+
+    data = r.json()
+    
+    if not isinstance(data, list) or len(data) < 2:
+        return []
+
+    comments_data = data[1]["data"]["children"]
+
+    comments = []
+
+    for c in comments_data:
+
+        if c.get("kind") != "t1":
+            continue
+
+        d = c["data"]
+        body = d.get("body", "").strip()
+        if not body:
+            continue
+
+        cleaned = clean_text(body)
+        if not cleaned:
+            continue
+
+        comments.append({
+            "text": cleaned,
+            "level": "comment",
+            "depth": d.get("depth", 1),
+            "score": d.get("score", 0)
+        })
+
+        if len(comments) >= max_comments:
+            break
+
+    return comments
+"""
 
 def fetch_news_rss(feeds, mu_only, limit_per_feed=50):
     Path("data/news").mkdir(parents=True, exist_ok=True)
     all_articles = []
+    
+    source_counts = {}
 
     for feed_url in feeds:
         
         feed = feedparser.parse(feed_url)
         source_name = normalise_source(feed)
+        print(f"\nFeed: {feed_url} -> {len(feed.entries)} entries, source: {source_name}")
         
         for entry in feed.entries[:limit_per_feed]:
             
-            text = f"{entry.title} {entry.summary}".lower()
+            text = get_entry_text(entry)
             
-            if any(keyword in text for keyword in MANCHESTER_UNITED_KEYWORDS):
+            if mu_only:
+                include = True
+            else:
+                include = any(keyword in text for keyword in MANCHESTER_UNITED_KEYWORDS)
+            if not include:
+                print(f"    Skipped (no keyword match)")
+                continue
                 
-                cleaned = clean_text(entry.title)
+            cleaned = clean_text(entry.title)
                 
-                if cleaned:
-                    all_articles.append({
-                        "date": datetime(*entry.published_parsed[:6]).strftime("%Y-%m-%d"),
-                        "text": cleaned,
-                        "source": source_name
-                    })
+            if cleaned:
+                all_articles.append({
+                    "date": datetime(*entry.published_parsed[:6]).strftime("%Y-%m-%d"),
+                    "text": cleaned,
+                    "source": source_name
+                })
+                print(f"    Added: '{cleaned[:50]}...'")
+                
+                source_counts[source_name] = source_counts.get(source_name, 0) + 1
 
     df = pd.DataFrame(all_articles)
     
@@ -108,8 +242,24 @@ def fetch_news_rss(feeds, mu_only, limit_per_feed=50):
     
     df.to_csv(output_file, index=False, encoding="utf-8")
     
-    sources = sorted(df["source"].unique())
-    return len(df), sources
+    
+    return len(df), source_counts
+
+def get_entry_text(entry):
+    parts = []
+
+    for attr in ["title", "summary", "description", "content"]:
+        value = getattr(entry, attr, "")
+        
+        if isinstance(value, str):
+            parts.append(value)
+        elif isinstance(value, list):
+            
+            for item in value:
+                if isinstance(item, dict) and "value" in item:
+                    parts.append(item["value"])
+    
+    return " ".join(parts).lower()
 
 
 def normalise_source(feed):
@@ -120,11 +270,32 @@ def normalise_source(feed):
         return "BBC Sport"
     if "guardian" in title:
         return "The Guardian"
+    if "mail online" in title:
+        return "The Daily Mail"
     if "sky" in title:
         return "Sky News"
-    if "manutd" in title or "manchester united" in title:
-        return "Man United Official"
+    if "fourfourtwo" in title:
+        return "Fourfourtwo"
     if "espn" in title or "ESPN" in title:
         return "ESPN"
-
+    if "caughtoffside" in title:
+        return "Caught Offside"
+    if "premiership results & table" in title:
+        return "Soccer News"
+    if "men - manchester united fc" in title:
+        return "Manchester Evening News"
+    if "football365.com | manchester united" in title:
+        return "Football 365"
+    if "the peoples person" in title:
+        return "The Peoples Person"
+    if "republik of mancunia" in title:
+        return "Republik of Mancunia"
+    if "stretty news" in title:
+        return "Stretty News"
+    if "manutd.com news rss" in title:
+        return "ManUnited.com"
+        
+    
+    # TODO Flesh this out so csv is better presented for newer sources
+ 
     return title.title()

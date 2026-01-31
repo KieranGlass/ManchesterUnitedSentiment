@@ -8,7 +8,7 @@ class DonutChart:
 
         self.fig, self.ax = plt.subplots(figsize=(3, 3), dpi=100, facecolor=self.bg_color)
         
-        self.ax.set_facecolor(self.bg_color)  # Set the axes background too
+        self.ax.set_facecolor(self.bg_color)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=parent_frame)
         self.canvas_widget = self.canvas.get_tk_widget()
