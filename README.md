@@ -22,7 +22,16 @@ Evaluation Metrics and a confusion matrix are returned to provide an overview of
 
 ## Installation.
 
+It is recommended to install the project dependencies inside a virtual environment
+
+```bash
+python -m venv venv
+source venv/bin/activate      # macOS / Linux
+.\venv\Scripts\activate       # Windows
+```
+
 `pip install -r requirements.txt`
+
 
 ## Using the App.
 
@@ -32,4 +41,18 @@ In order to start the GUI, when located in folder run
 
 GUI will appear and the data collection process begins by clicking one of the labelled buttons. Testing tool can be accessed next to the about button in the top
 right of the window.
+
+## Python Version and Environment
+
+Project designed to work with Python 3.10 or later, earlier versions may cause runtime errors or unexpected behaviour
+It is recommended to run the application inside a **virtual environment**.
+
+## SSL certificates
+
+App runs nltk.download() statements which may cause app to fail due to missing SSL certificates, more common on macOS. 
+See: https://docs.python.org/3/using/mac.html#installing-on-macos
+
+
+
+
 
