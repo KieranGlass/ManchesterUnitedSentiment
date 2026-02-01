@@ -4,7 +4,7 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
 
-# nltk.download("vader_lexicon")
+nltk.download("vader_lexicon")
 
 sia = SentimentIntensityAnalyzer()
 
