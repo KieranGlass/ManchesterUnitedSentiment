@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class DonutChart:
@@ -6,8 +6,11 @@ class DonutChart:
         self.parent_frame = parent_frame
         self.bg_color = bg_color
 
-        self.fig, self.ax = plt.subplots(figsize=(3, 3), dpi=100, facecolor=self.bg_color)
+        # self.fig, self.ax = plt.subplots(figsize=(3, 3), dpi=100, facecolor=self.bg_color)
         
+        self.fig = Figure(figsize=(3, 3), dpi=100, facecolor=self.bg_color)
+        self.ax = self.fig.add_subplot(111)
+         
         self.ax.set_facecolor(self.bg_color)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=parent_frame)

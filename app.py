@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use("TkAgg")
+
 import tkinter as tk
 from tkinter import ttk
 from src import data_collection, donut_chart, sentiment_analysis, styles, validation
