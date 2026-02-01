@@ -3,35 +3,7 @@ from tkinter import ttk
 from src import data_collection, donut_chart, sentiment_analysis, styles, validation
 from tkinter import messagebox
 from PIL import Image, ImageTk
-
-MU_SUBREDDITS = ["ManchesterUnited", "RedDevils"]
-GENERAL_SUBREDDITS = ["soccer", "PremierLeague", "football"]
-
-MU_NEWS_FEEDS = [
-    "https://www.manutd.com/Feeds/NewsSecondRSSFeed",
-    "https://thepeoplesperson.com/feed/",
-    "https://therepublikofmancunia.com/feed/",
-    "https://strettynews.com/feed/",
-    "https://manutdnews.com/feed/",
-      
-]
-
-GENERAL_NEWS_FEEDS = [
-    "https://www.bbc.co.uk/sport/football/rss.xml",
-    "https://www.101greatgoals.com/feed/",
-    "https://www.espn.com/espn/rss/news",
-    "https://www.theguardian.com/football/manchester-united/rss",
-    "https://www.dailymail.co.uk/sport/manchester-united/articles.rss",
-    "https://www.fourfourtwo.com/feeds.xml",
-    "https://talksport.com/feed/",
-    "https://www.skysports.com/rss/12040",
-    "https://www.caughtoffside.com/tags/premier-league/feed/",
-    "https://www.soccernews.com/category/english-premier-league/feed/",
-    "https://feeds.bleacherreport.com/articles",
-    "https://www.football365.com/manchester-united/rss2",
-    "https://www.manchestereveningnews.co.uk/all-about/manchester-united-fc?service=rss",
-      
-]
+ 
 
 root = tk.Tk()
 root.title("Manchester United Sentiment Analyzer")
@@ -56,113 +28,58 @@ image_label = ttk.Label(root, image=photo, style="Image.TLabel")
 image_label.grid(row=0, column=0, sticky="nw", padx=15, pady=5)
 
 def show_about():
-    about = tk.Toplevel(root)
-    about.title("About")
-    about.resizable(False, False)
-    about.transient(root)
-    about.grab_set()
-
-    about.geometry("700x350")
-
-    # configure grid
-    about.columnconfigure(0, weight=1)
-    about.rowconfigure(0, weight=1)
-    about.rowconfigure(1, weight=0)
-
-    # text label
-    label = ttk.Label(
-        about,
-        text=(
-            "Manchester United Sentiment Analyser\n\n"
-            "Version 1.0\n"
-            "A simple Tkinter app for assessing the sentiment of fans and journalists towards the club\n"
-            "Sentiment is analysed and separated into three categories; Positive, Neutral and Negative\n"
-            ""
-        ),
-        justify="center",
-        padding=10
+    messagebox.showinfo(
+                "About",
+        "This application performs sentiment analysis on Reddit and news headlines.\n\n"
+        "It uses VADER, a rule-based sentiment analysis model, to classify each headline "
+        "as Positive, Neutral, or Negative and presents the results as percentage summaries.\n\n"
+        "The test tool allows you to upload a CSV file containing manually assigned sentiment "
+        "labels. These are compared against VADER’s predictions using evaluation metrics "
+        "such as accuracy and precision to assess performance in this context.\n\n"
+        "Note: Sentiment analysis is inherently subjective, and results should be interpreted "
+        "as indicative rather than definitive."
     )
-    label.grid(row=0, column=0, sticky="nsew")
-
-    # OK button
-    ok_btn = ttk.Button(
-        about,
-        text="Close",
-        style="Action.TButton",
-        command=about.destroy
-    )
-    ok_btn.grid(row=1, column=0, pady=(0, 10))
     
 def show_info(section):
     info = analysis_info.get(section)
-    
-    about = tk.Toplevel(root)
-    about.title("Source Information")
-    about.resizable(False, False)
-    about.transient(root)
-    about.grab_set()
-
-    about.geometry("500x500")
-
-    # configure grid
-    about.columnconfigure(0, weight=1)
-    about.rowconfigure(0, weight=1)
-    about.rowconfigure(1, weight=0)
 
     if not info:
-        about.destroy()
-        messagebox.showinfo("Info", "No analysis has been run yet.\n\nPlease run the analysis first.")
+        messagebox.showinfo(
+            "Info",
+            "No analysis has been run yet.\n\nPlease run the analysis first."
+        )
         return
-        # text = ":("
-    else:
-        lines = ["Sources used for this analysis:\n"]
-        for source, count in info["sources"].items():
-            lines.append(f"{source}: {count} titles")
-            
-        lines.append(f"\nTotal titles analysed: {info['total']}")
 
-        text = "\n".join(lines)
+    lines = ["Sources used for this analysis:\n"]
 
-    label = ttk.Label(
-        about,
-        text=text,
-        justify="left",
-        padding=10
-    )
-    
-    label.grid(row=0, column=0, sticky="nsew")
+    for source, count in info["sources"].items():
+        lines.append(f"{source}: {count} titles")
 
-    # OK button
-    ok_btn = ttk.Button(
-        about,
-        text="Close",
-        style="Action.TButton",
-        command=about.destroy
-    )
-    ok_btn.grid(row=1, column=0, pady=(0, 10))
+    lines.append(f"\nTotal titles analysed: {info['total']}")
+
+    text = "\n".join(lines)
+
+    messagebox.showinfo("Source Information", text)
 
 about_btn = styles.create_info_dot(root, command=show_about)
 about_btn.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
 
-test_btn = ttk.Button(root, text="🧪", width=3, command=lambda: validation.open_test_window(root))
-test_btn.grid(row=0, column=1, sticky="ne", padx=(0, 40), pady=5)
+test_btn = styles.create_test_dot(root, command=lambda: validation.open_test_window(root))
+test_btn.grid(row=0, column=1, sticky="ne", padx=(0, 30), pady=5)
 
 mu_frame = ttk.LabelFrame(root, padding=(10, 10))
 mu_frame.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
 def analyze_mu():
     try:
-        total_count, source_count = data_collection.fetch_reddit_json(MU_SUBREDDITS, True)
+        total_count, source_count = data_collection.fetch_reddit_json("mu", True)
         
-        # Step 2: run sentiment analysis on the CSV
         df = sentiment_analysis.analyze_csv_sentiment("data/reddit/mu_posts.csv")
 
-        # Step 3: compute positive percentage
         pos_percent = (df["sentiment"]=="Positive").mean() * 100
         neg_percent = (df["sentiment"]=="Negative").mean() * 100
         neu_percent = (df["sentiment"]=="Neutral").mean() * 100
 
-        # Step 4: display donut chart
         mu_red_donut.update(pos_percent, neg_percent, neu_percent)
         
         analysis_info["mu_reddit"] = {
@@ -191,7 +108,7 @@ gen_frame.grid(row=1, column=1, padx=20, pady=10, sticky="nsew")
 
 def analyze_general():
     try:
-        total_count, source_count = data_collection.fetch_reddit_json(GENERAL_SUBREDDITS, False)
+        total_count, source_count = data_collection.fetch_reddit_json("gen", False)
         
         # Step 2: run sentiment analysis on the CSV
         df = sentiment_analysis.analyze_csv_sentiment("data/reddit/general_posts.csv")
@@ -228,7 +145,7 @@ gen_info_btn.grid(row=1, column=0, sticky="ne", padx=1, pady=1)
 def analyze_mu_news():
     try:
         # Step 1: fetch articles & save to CSV
-        total_count, source_count = data_collection.fetch_news_rss(MU_NEWS_FEEDS, mu_only=True)
+        total_count, source_count = data_collection.fetch_news_rss("mu", mu_only=True)
 
         # Step 2: run sentiment analysis on the CSV
         df = sentiment_analysis.analyze_csv_sentiment("data/news/mu_articles.csv")
@@ -265,7 +182,7 @@ mu_news_info_btn.grid(row=3, column=0, sticky="ne", padx=1, pady=1)
 def analyze_general_news_button():
     try:
         # Step 1: fetch articles & save to CSV
-        total_count, source_count = data_collection.fetch_news_rss(GENERAL_NEWS_FEEDS, mu_only=False)
+        total_count, source_count = data_collection.fetch_news_rss("gen", mu_only=False)
 
         # Step 2: run sentiment analysis on the CSV
         df = sentiment_analysis.analyze_csv_sentiment("data/news/general_articles.csv")

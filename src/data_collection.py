@@ -1,3 +1,4 @@
+from tkinter import messagebox
 import requests
 import feedparser
 from pathlib import Path
@@ -5,39 +6,64 @@ import pandas as pd
 from datetime import datetime
 from src.preprocessing import clean_text
 
+MU_SUBREDDITS = ["ManchesterUnited", "RedDevils"]
+GENERAL_SUBREDDITS = ["soccer", "PremierLeague", "football"]
 
-
-MANCHESTER_UNITED_KEYWORDS = [
-    "man united",
-    "mufc",
-    "the red devils",
-    "red devils",
-    "manchester united",
-    "manchester utd",
-    "man u",
-    "old trafford",
-    "man utd",
-    "bruno fernandes",
-    "lisandro martinez",
-    "harry maguire",
-    "luke shaw",
-    "matheus cunha",
-    "stretford end",
-    "casemiro",
-    "sesko",
-    "mbeumo",
-    "amad",
-    "mason mount",
-    "carrick",
-    "ratcliffe",
-    "jason wilcox",
-    "omar berrada",
-    "class of 92",
-    "alex ferguson",
-    "glazers",
+MU_NEWS_FEEDS = [
+    "https://www.manutd.com/Feeds/NewsSecondRSSFeed",
+    "https://thepeoplesperson.com/feed/",
+    "https://therepublikofmancunia.com/feed/",
+    "https://strettynews.com/feed/",
+    "https://manutdnews.com/feed/",
 ]
 
-def fetch_reddit_json(subreddits, mu_only, limit=100):
+GENERAL_NEWS_FEEDS = [
+    "https://www.bbc.co.uk/sport/football/rss.xml",
+    "https://www.101greatgoals.com/feed/",
+    "https://www.espn.com/espn/rss/news",
+    "https://www.theguardian.com/football/manchester-united/rss",
+    "https://www.dailymail.co.uk/sport/manchester-united/articles.rss",
+    "https://www.fourfourtwo.com/feeds.xml",
+    "https://talksport.com/feed/",
+    "https://www.skysports.com/rss/12040",
+    "https://www.caughtoffside.com/tags/premier-league/feed/",
+    "https://www.soccernews.com/category/english-premier-league/feed/",
+    "https://feeds.bleacherreport.com/articles",
+    "https://www.football365.com/manchester-united/rss2",
+    "https://www.manchestereveningnews.co.uk/all-about/manchester-united-fc?service=rss",
+    "https://www.si.com/feed",
+    "https://www.footballfancast.com/feed",
+    "https://metro.co.uk/tag/premier-league/feed",
+    "https://football-talk.co.uk/topics/premier-league/feed",
+    "https://e00-marca.uecdn.es/rss/en/football/premier-league.xml",
+    "https://givemesport.com/premier-league/feed",
+    "https://www.standard.co.uk/sport/rss",
+    "https://www.independent.co.uk/sport/rss",
+    "https://www.telegraph.co.uk/sport/rss.xml",
+    "https://www.mirror.co.uk/sport/rss.xml",
+    "https://news.google.com/rss/search?q=Manchester+United",
+    
+    
+]
+
+MANCHESTER_UNITED_KEYWORDS = [
+    "man united", "mufc", "the red devils", "red devils", "manchester united", "manchester utd",
+    "man u", "old trafford", "man utd", "bruno fernandes", "lisandro martinez", "harry maguire",
+    "luke shaw", "matheus cunha", "stretford end", "casemiro", "sesko", "mbeumo", "amad diallo",
+    "mason mount", "carrick", "ratcliffe", "jason wilcox", "omar berrada", "class of 92",
+    "alex ferguson", "glazers", "senne lammens", "leny yoro", "darren fletcher", "dorgu",
+    "paul scholes", "roy keane", "gary neville", "andy mitten", "ugarte", "kobbie mainoo"
+]
+
+def fetch_reddit_json(type, mu_only, limit=100):
+    subreddits = []
+    if type == "mu":
+        subreddits = MU_SUBREDDITS
+    elif type == "gen":
+        subreddits = GENERAL_SUBREDDITS
+    else:
+        messagebox.showerror("error")
+    
     url_template = "https://www.reddit.com/r/{}/hot.json"
     headers = {"User-Agent": "windows:manchester-united-sentiment-uni-project:v1.0"}
 
@@ -191,7 +217,16 @@ def fetch_comments(post_id, max_comments=5):
     return comments
 """
 
-def fetch_news_rss(feeds, mu_only, limit_per_feed=50):
+def fetch_news_rss(type, mu_only, limit_per_feed=50):
+    feeds = []
+    
+    if type == "mu":
+        feeds = MU_NEWS_FEEDS
+    elif type == "gen":
+        feeds = GENERAL_NEWS_FEEDS
+    else:
+        messagebox.showerror("error")
+    
     Path("data/news").mkdir(parents=True, exist_ok=True)
     all_articles = []
     
@@ -248,7 +283,7 @@ def fetch_news_rss(feeds, mu_only, limit_per_feed=50):
 def get_entry_text(entry):
     parts = []
 
-    for attr in ["title", "summary", "description", "content"]:
+    for attr in ["title", "summary", "description"]: # Can add content here to add articles that reference a keyword in the main content
         value = getattr(entry, attr, "")
         
         if isinstance(value, str):
@@ -280,12 +315,28 @@ def normalise_source(feed):
         return "ESPN"
     if "caughtoffside" in title:
         return "Caught Offside"
+    if "metro" in title:
+        return "Metro UK"
+    if "marca" in title:
+        return "Marca"
+    if "mirror" in title:
+        return "The Daily Mirror"
+    if "standard" in title:
+        return "London Evening Standard"
+    if "independent" in title:
+        return "The Independent"
+    if "google news" in title:
+        return "Google News"
     if "premiership results & table" in title:
         return "Soccer News"
+    if "the latest news, gossip and transfer rumours" in title:
+        return "Football-talk.co.uk"
     if "men - manchester united fc" in title:
         return "Manchester Evening News"
     if "football365.com | manchester united" in title:
         return "Football 365"
+    if "givemesport" in title:
+        return "Give Me Sport"
     if "the peoples person" in title:
         return "The Peoples Person"
     if "republik of mancunia" in title:

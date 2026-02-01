@@ -10,9 +10,9 @@ sia = SentimentIntensityAnalyzer()
 
 def label_sentiment(compound):
     """Label compound score as Positive, Neutral, or Negative"""
-    if compound >= 0.06:
+    if compound >= 0.05:
         return "Positive"
-    elif compound <= -0.04:
+    elif compound <= -0.05:
         return "Negative"
     else:
         return "Neutral"

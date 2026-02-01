@@ -46,5 +46,31 @@ def create_info_dot(parent, command):
     lbl.bind("<Leave>", lambda e: lbl.config(bg="black"))
 
     lbl.bind("<Button-1>", lambda e: command())
+    return lbl
 
+def create_test_dot(parent, command):
+    test_font = font.Font(
+        family="Segoe UI",
+        size=9,
+        slant="italic",
+        weight="bold"
+    )
+
+    lbl = tk.Label(
+        parent,
+        text="Test", 
+        font=test_font,
+        fg="white",
+        bg="black",
+        width=4,
+        height=1,
+        cursor="hand2"
+    )
+
+    lbl.configure(padx=2, pady=0)
+
+    lbl.bind("<Enter>", lambda e: lbl.config(bg="#333333"))
+    lbl.bind("<Leave>", lambda e: lbl.config(bg="black"))
+
+    lbl.bind("<Button-1>", lambda e: command())
     return lbl
