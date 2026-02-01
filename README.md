@@ -30,14 +30,16 @@ source venv/bin/activate      # macOS / Linux
 .\venv\Scripts\activate       # Windows
 ```
 
-`pip install -r requirements.txt`
+then to prepare the environment for the application
+
+```pip install -r requirements.txt```
 
 
 ## Using the App.
 
 In order to start the GUI, when located in folder run
 
-`python app.py`
+```python app.py```
 
 GUI will appear and the data collection process begins by clicking one of the labelled buttons. Testing tool can be accessed next to the about button in the top
 right of the window.
