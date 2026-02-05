@@ -2,10 +2,23 @@ import matplotlib
 matplotlib.use("TkAgg")
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from src import data_collection, donut_chart, sentiment_analysis, styles, validation
-from tkinter import messagebox
 from PIL import Image, ImageTk
+
+"""
+Main Application Entrypoint
+
+Creates the main GUI for the user using TKinter.
+
+Acts as the applications central control point that connects to all other modules.
+Coordinates interactions between the data collection, sentiment analysis and 
+visualisation modules. 
+
+Contains the key analyse methods that guide the application through the 
+other modules before updating the GUI.
+    
+"""
  
 
 root = tk.Tk()
@@ -113,15 +126,12 @@ def analyze_general():
     try:
         total_count, source_count = data_collection.fetch_reddit_json("gen", False)
         
-        # Step 2: run sentiment analysis on the CSV
         df = sentiment_analysis.analyze_csv_sentiment("data/reddit/general_posts.csv")
 
-        # Step 3: compute positive percentage
         pos_percent = (df["sentiment"]=="Positive").mean() * 100
         neg_percent = (df["sentiment"]=="Negative").mean() * 100
         neu_percent = (df["sentiment"]=="Neutral").mean() * 100
 
-        # Step 4: display donut chart
         gen_red_donut.update(pos_percent, neg_percent, neu_percent)
         
         analysis_info["general_reddit"] = {
@@ -147,18 +157,15 @@ gen_info_btn.grid(row=1, column=0, sticky="ne", padx=1, pady=1)
 
 def analyze_mu_news():
     try:
-        # Step 1: fetch articles & save to CSV
+
         total_count, source_count = data_collection.fetch_news_rss("mu", mu_only=True)
 
-        # Step 2: run sentiment analysis on the CSV
         df = sentiment_analysis.analyze_csv_sentiment("data/news/mu_articles.csv")
 
-        # Step 3: compute positive percentage
         pos_percent = (df["sentiment"]=="Positive").mean() * 100
         neg_percent = (df["sentiment"]=="Negative").mean() * 100
         neu_percent = (df["sentiment"]=="Neutral").mean() * 100
 
-        # Step 4: display donut chart
         mu_news_donut.update(pos_percent, neg_percent, neu_percent)
         
         analysis_info["mu_news"] = {
@@ -184,18 +191,15 @@ mu_news_info_btn.grid(row=3, column=0, sticky="ne", padx=1, pady=1)
 
 def analyze_general_news_button():
     try:
-        # Step 1: fetch articles & save to CSV
+        
         total_count, source_count = data_collection.fetch_news_rss("gen", mu_only=False)
 
-        # Step 2: run sentiment analysis on the CSV
         df = sentiment_analysis.analyze_csv_sentiment("data/news/general_articles.csv")
 
-        # Step 3: compute positive percentage
         pos_percent = (df["sentiment"]=="Positive").mean() * 100
         neg_percent = (df["sentiment"]=="Negative").mean() * 100
         neu_percent = (df["sentiment"]=="Neutral").mean() * 100
 
-        # Step 4: display donut chart
         general_news_donut.update(pos_percent, neg_percent, neu_percent)
         
         analysis_info["general_news"] = {
@@ -233,7 +237,6 @@ root.grid_rowconfigure(1, weight=1)
 root.grid_rowconfigure(2, weight=1)
 root.grid_rowconfigure(3, weight=1)
 
-# Run the app
 root.mainloop()
 
 

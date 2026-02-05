@@ -6,10 +6,40 @@ import matplotlib.pyplot as plt
 
 nltk.download("vader_lexicon")
 
+"""
+Sentiment Analysis Module
+
+Implements rule-based sentiment classification using NLTK's VADER
+SentimentIntensityAnalyzer() 
+
+This module:
+
+- Applies VADER polarity scoring to text datasets  
+- Extracts compound, positive, neutral, and negative sentiment values  
+- Converts compound scores into readable sentiment labels 
+
+Compound is from -1 to 1 and the neutral band is set at -0.05 - 0.05,
+which is quite small and easily changed
+
+label_sentiment method handles the labelling and modifying this method
+can add extra layers of sentiment for a more in depth look at how 
+stong sentiment is. Current app may show 70% positive and 30% negative, 
+however there may be no positive sentiment above 0.5 in those results and 
+majority of the negative sentiment could be -0.9  
+
+The resulting sentiment data is passed on to the visualisation module
+
+Note: commented out compute_weight method is part of fucntioanlity that
+looked to take sentiment from reddit comments and apply a weighting to 
+liked comments as oppose to downvoted comments. Reddit API limits prevented
+it from being integrated for now
+
+"""
+
 sia = SentimentIntensityAnalyzer()
 
 def label_sentiment(compound):
-    """Label compound score as Positive, Neutral, or Negative"""
+
     if compound >= 0.05:
         return "Positive"
     elif compound <= -0.05:

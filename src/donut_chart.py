@@ -1,12 +1,27 @@
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+"""
+Donut Chart Visualisation Class
+
+Provides a reusable Tkinter donut chart for displaying
+sentiment distribution across all sentiments.
+
+Module embeds a Matplotlib figure inside a Tkinter frame and
+visualises positive, neutral, and negative sentiment as percentage
+segments. 
+
+init method creates the zeroed donut chart that populates the 
+app when it is first run. Update method updates the chart with the 
+sentiment information after it has passed through data collection and 
+sentiment analysis
+
+"""
+
 class DonutChart:
     def __init__(self, parent_frame, bg_color="#ffdddd"):
         self.parent_frame = parent_frame
         self.bg_color = bg_color
-
-        # self.fig, self.ax = plt.subplots(figsize=(3, 3), dpi=100, facecolor=self.bg_color)
         
         self.fig = Figure(figsize=(3, 3), dpi=100, facecolor=self.bg_color)
         self.ax = self.fig.add_subplot(111)

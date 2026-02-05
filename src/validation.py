@@ -4,6 +4,34 @@ import os
 from src import sentiment_analysis, donut_chart, styles
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 
+"""
+    Evaluation module 
+    
+    Opens the sentiment validation window that allows users to load a
+    manually labelled CSV dataset and evaluate the performance of the VADER
+    sentiment analysis pipeline
+
+    The validation interface provides:
+
+    - CSV file selection for user-supplied test data
+    - Automated sentiment analysis using the sentiment module
+    - Donut chart visualisation of sentiment distribution
+    - Confusion matrix comparing predicted vs manual labels
+    - Evaluation metrics including accuracy, precision, recall, and F1 score
+
+    If manual sentiment labels are present in the CSV file, the tool computes
+    performance statistics to help users understand where the model performs
+    well or struggles
+    
+    There is a test_sentiment.csv file in the data folder to test the evaluation
+    module
+
+    The window uses grab_set, preventing interaction with the parent window
+    until closed, as an error prevention plan
+    
+
+"""
+
 def open_test_window(parent):
     
     test_win = tk.Toplevel(parent)

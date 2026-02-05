@@ -6,6 +6,41 @@ import pandas as pd
 from datetime import datetime
 from src.preprocessing import clean_text
 
+"""
+Data Collection Module
+
+This module is responsible for retrieving Manchester United related
+text data from external sources and preparing it for sentiment analysis
+
+Data is collected from (for now):
+
+• Reddit — via Reddits JSON API, pulling hot posts from selected subreddits  
+• News feeds — via RSS feeds from football and Manchester United sources
+
+General Reddit and RSS News feeds are filtered using Man united keywords
+constant variable - Future implementation could look to access these words
+programmatically, especially as keywords change over time
+
+Once data is collected it is prepared using utility from preprocessing.py
+
+Standardised with date, text, and source metadata
+
+The collected data is saved as CSV files in data folder for downstream
+sentiment analysis and visualisation
+
+The module also tracks per-source counts to support reporting
+and transparency in the GUI and has a normalisation method for cleaning 
+up sources when presented to user
+
+Note: Subreddit limits placed at 100 and can easily be changed. also, reddit
+thread comments allow a much deeper dive into sentiment. However both the limit
+and comment functionality would require API calls that surpass what is allowed 
+without a Reddit developer account and therefore wasnt continued with for now.
+
+It is for that reason there are commented out fetch comments functionality in
+this file  
+"""
+
 MU_SUBREDDITS = ["ManchesterUnited", "RedDevils"]
 GENERAL_SUBREDDITS = ["soccer", "PremierLeague", "football"]
 
@@ -118,11 +153,9 @@ def fetch_reddit_json(type, mu_only, limit=100):
                 cleaned = clean_text(raw_title)
                 if not cleaned:
                     continue
-                
-                post_id = p["id"]
 
                 subreddit_posts.append({
-                    "date": datetime.utcfromtimestamp(p["created_utc"]).strftime("%Y-%m-%d"),
+                    "date": datetime.fromtimestamp(p["created_utc"]).strftime("%Y-%m-%d"),
                     "text": cleaned,
                     "source": f"r/{subreddit}",
                 })
@@ -283,7 +316,7 @@ def fetch_news_rss(type, mu_only, limit_per_feed=50):
 def get_entry_text(entry):
     parts = []
 
-    for attr in ["title", "summary", "description"]: # Can add content here to add articles that reference a keyword in the main content
+    for attr in ["title", "summary", "description"]: # Can add "content" here to add articles that reference a keyword in the main content
         value = getattr(entry, attr, "")
         
         if isinstance(value, str):
@@ -298,6 +331,8 @@ def get_entry_text(entry):
 
 
 def normalise_source(feed):
+    
+    # this is just about tidying up the about info after analysis is run for user
     
     title = feed.feed.get("title", "unknown").lower()
 
@@ -346,7 +381,5 @@ def normalise_source(feed):
     if "manutd.com news rss" in title:
         return "ManUnited.com"
         
-    
-    # TODO Flesh this out so csv is better presented for newer sources
  
     return title.title()

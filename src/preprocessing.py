@@ -5,6 +5,27 @@ from nltk.corpus import stopwords
 
 nltk.download("stopwords")
 
+
+"""
+Text Preprocessing Module
+
+Provides utilities to clean and standardise raw text prior to
+sentiment analysis
+
+The cleaning process:
+
+- Converts text to lowercase
+- Removes URLs, users, subreddit references, HTML artifacts
+- Filters non-essential characters while preserving punctuation
+- Removes common English stopwords
+- Normalises whitespace
+
+Future consideration for language, Manchester united has a global following
+so look to incorporate feedback in languages other than english
+
+
+"""
+
 STOP_WORDS = set(stopwords.words("english"))
 
 def clean_text(text: str) -> str:
